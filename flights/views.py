@@ -46,7 +46,7 @@ def book_flight(request, flight_id):
             flight.seats_available -= seats
             flight.save()
             messages.success(request, f"✅ Booking created! Seats: {seats}.")
-            return redirect('my_bookings')
+            return redirect('flights:my_bookings')
 
     return render(request, 'flights/book_flight.html', {'flight': flight})
 
@@ -88,7 +88,7 @@ def cancel_booking(request, booking_id):
     booking.flight.save()
     booking.save()
     messages.success(request, "✅ Booking cancelled!")
-    return redirect('my_bookings')
+    return redirect('flights:my_bookings') 
 
 @login_required
 def payment(request, booking_id):
@@ -100,7 +100,7 @@ def payment(request, booking_id):
         booking.payment_id = payment_id
         booking.save()
         messages.success(request, "✅ Payment processed (dummy gateway)!")
-        return redirect('my_bookings')
+        return redirect('flights:my_bookings')
     return render(request, 'flights/payment.html', {'booking': booking})
 
 def sign_up(request):
