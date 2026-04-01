@@ -13,6 +13,19 @@ services:
       - DB_PASS=flightpass
     depends_on:
       - db
+    networks:
+      - webnet
+  nginx:
+    build: ./nginx
+    image: nginx:alpine
+    container_name: nginx-api-gateway
+    ports:
+      - "8080:80"
+      - "443:443"                        
+    depends_on:
+      - web
+    networks:
+      - webnet
   db:
     image: postgres:16
     environment:
@@ -23,5 +36,12 @@ services:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - webnet
+
+networks:
+  webnet:
+    driver: bridge
+
 volumes:
   pgdata:
