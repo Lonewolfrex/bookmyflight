@@ -13,4 +13,5 @@ urlpatterns = [
     path('sign-up/', sign_up, name='sign_up'), # Global signup
     path('accounts/', include('django.contrib.auth.urls')),
     path('', include('flights.urls')),        # All flights URLs
+    path("api/", include("flights.api_urls")),
 ]
