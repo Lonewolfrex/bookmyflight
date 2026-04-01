@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-lg-8">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-primary text-white">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h3 class="mb-0">
+                            <i class="bi bi-ticket-perforated-fill"></i> Book {{ flight.flight_number }}
+                        </h3>
+                        <p class="mb-0 opacity-75">{{ flight.origin }} → {{ flight.destination }}</p>
+                    </div>
+                    <div class="col-auto">
+                        <span class="badge bg-light text-dark fs-6">
+                            {{ flight.airline }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-calendar-check text-primary me-2"></i>
+                                <div>
+                                    <strong>{{ flight.departure|date:"EEE, d MMM" }}</strong><br>
+                                    <small class="text-muted">{{ flight.departure|time:"H:i" }} – {{ flight.arrival|time:"H:i" }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <div class="h3 text-primary mb-0">₹{{ flight.price }}/seat</div>
+                            <small class="text-success">Only {{ flight.seats_available }} seats left!</small>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Number of seats</label>
+                            <input type="number" name="seats" min="1" max="{{ flight.seats_available }}" 
+                                   value="1" required 
+                                   class="form-control form-control-lg"
+                                   data-price="{{ flight.price|floatformat:2 }}">
+                            <div class="form-text">
+                                Max {{ flight.seats_available }} available
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Total Price</label>
+                            <div class="h2 text-success mb-0" id="total-price">
+                                ₹{{ flight.price }}
+                            </div>
+                            <small class="text-muted">x <span id="seat-count">1</span> seats</small>
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-lg"></i> Confirm Booking
+                        </button>
+                    </div>
+                </form>
+                <div class="text-center mt-4">
+                    <a href="{% url 'flights:home' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Flights
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- BULLETPROOF JavaScript using data attributes -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const seatsInput = document.querySelector('input[name="seats"]');
+    const totalPriceEl = document.getElementById('total-price');
+    const seatCountEl = document.getElementById('seat-count');
+    
+    // Get price from HTML data attribute (100% safe)
+    const pricePerSeat = parseFloat(seatsInput.dataset.price) || 0;
+    
+    function updatePrice() {
+        const seats = parseInt(seatsInput.value) || 1;
+        const total = seats * pricePerSeat;
+        
+        totalPriceEl.textContent = '₹' + total.toLocaleString('en-IN');
+        seatCountEl.textContent = seats;
+    }
+    
+    // Bind events
+    seatsInput.addEventListener('input', updatePrice);
+    seatsInput.addEventListener('change', updatePrice);
+    
+    // Initial calculation
+    updatePrice();
+});
+</script>
+
+<style>
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+    transition: all 0.3s ease;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8">
+        <div class="card shadow border-0">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">
+                    <i class="bi bi-pencil-square"></i> Edit Booking #{{ booking.id }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6><strong>{{ booking.flight.flight_number }}</strong></h6>
+                        <p class="mb-1">{{ booking.flight.origin }} → {{ booking.flight.destination }}</p>
+                        <small class="text-muted">{{ booking.flight.departure|date:"EEE, d MMM" }}</small>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div class="h4 text-primary mb-0">₹{{ booking.flight.price }}/seat</div>
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Change number of seats</label>
+                        <input type="number" name="seats" 
+                               value="{{ booking.seats }}" min="1" max="{{ booking.flight.seats_available|add:booking.seats }}"
+                               class="form-control form-control-lg" required>
+                        <div class="form-text">
+                            Max {{ booking.flight.seats_available|add:booking.seats }} available (including current)
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check2"></i> Update Booking
+                        </button>
+                        <a href="{% url 'flights:my_bookings' %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-arrow-left"></i> Back to Bookings
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

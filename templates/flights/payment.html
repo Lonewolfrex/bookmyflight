@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-lg-6">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-success text-white text-center">
+                <div class="mb-3">
+                    <i class="bi bi-credit-card display-4"></i>
+                </div>
+                <h3 class="mb-0">Complete Payment</h3>
+                <p class="mb-0 opacity-75">Booking #{{ booking.id }}</p>
+            </div>
+            <div class="card-body p-4">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6><strong>{{ booking.flight.flight_number }}</strong></h6>
+                        {{ booking.flight.origin }} → {{ booking.flight.destination }}
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div class="h3 text-success mb-0">
+                            ₹{{ booking.total_price|floatformat:0 }}
+                        </div>
+                        <small class="text-muted">{{ booking.seats }} seats</small>
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-4 p-4 bg-light rounded">
+                        <h6 class="mb-3">
+                            <i class="bi bi-card-text text-primary me-2"></i>
+                            Payment Details (Demo)
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <input type="text" class="form-control" placeholder="Card Number (4111 1111 1111 1111)" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" placeholder="Expiry (MM/YY)" readonly>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" class="form-control" placeholder="CVV" readonly>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" class="form-control" placeholder="Name" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-lock-fill me-2"></i>
+                            Pay ₹{{ booking.total_price|floatformat:0 }} Now
+                        </button>
+                    </div>
+                </form>
+
+                <div class="text-center mt-4">
+                    <div class="text-muted">
+                        <i class="bi bi-shield-check"></i> Secure payment powered by Demo Gateway
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
