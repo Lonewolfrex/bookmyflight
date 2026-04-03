@@ -40,7 +40,9 @@ jobs:
         run: docker pull ${{ secrets.DOCKER_USERNAME }}/bookmyflight:latest
 
       - name: Stop Existing Containers
+        working-directory: C:\Users\ksing\OneDrive\Desktop\bookmyflight
         run: docker compose down
 
       - name: Start Updated Containers
+        working-directory: C:\Users\ksing\OneDrive\Desktop\bookmyflight
         run: docker compose up -d --force-recreate
