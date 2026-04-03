@@ -1,6 +1,6 @@
 services:
   web:
-    build: .
+    image: lonewolfrex/bookmyflight:latest
     ports:
       - "8000:8000"
     volumes:
