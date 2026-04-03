@@ -28,7 +28,7 @@ jobs:
           name: sonar-report
           path: sonar-report.txt
 
-      - name: SonarCloud Quality Gate
+      - name: SonarCloud Quality Gate check
         uses: SonarSource/sonarqube-quality-gate-action@master
         timeout-minutes: 5
         env:
