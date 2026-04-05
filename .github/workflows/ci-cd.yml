@@ -39,7 +39,6 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
-          # This forces CodeQL to output the SARIF to a predictable location
           upload: true
           output: sarif-results
 
@@ -56,8 +55,7 @@ jobs:
       - name: Create CodeQL HTML Report
         run: |
           echo "Searching for SARIF files in the results directory..."
-          
-          # Use the explicit output directory we defined in the analyze step
+
           SARIF=$(find sarif-results -name "*.sarif" | head -1)
 
           if [ ! -f "$SARIF" ]; then
@@ -83,7 +81,10 @@ jobs:
           RESULTS=$(jq -r '.runs[].results[]' "$SARIF" 2>/dev/null || echo "[]")
 
           if [ "$RESULTS" = "[]" ] || [ -z "$RESULTS" ]; then
-            TOTAL=0; HIGH=0; MED=0; LOW=0
+            TOTAL=0
+            HIGH=0
+            MED=0
+            LOW=0
           else
             TOTAL=$(echo "$RESULTS" | jq -s 'length')
             HIGH=$(echo "$RESULTS" | jq -s 'map(select(.level == "error")) | length')
@@ -96,26 +97,13 @@ jobs:
           <html>
           <head>
             <title>CodeQL SAST Report</title>
-            <style>
-              body { font-family: system-ui, sans-serif; margin: 2em; }
-              h1, h2 { color: #2c3e50; }
-              .stat { font-weight: bold; color: #e74c3c; }
-              .summary { margin: 1em 0; padding: 1em; background: #f9f9f9; border-radius: 0.5em; }
-            </style>
           </head>
           <body>
             <h1>CodeQL SAST Report</h1>
-            <p><strong>Generated on:</strong> $(date)</p>
-            <p><strong>Repository:</strong> ${{ github.repository }}</p>
-            <div class="summary">
-              <h2>Issue Summary</h2>
-              <p><span class="stat">Total issues:</span> $TOTAL</p>
-              <p><span class="stat">High severity (error):</span> $HIGH</p>
-              <p><span class="stat">Medium severity (warning):</span> $MED</p>
-              <p><span class="stat">Low severity (note):</span> $LOW</p>
-            </div>
-            <h2>Details</h2>
-            <p>Full CodeQL findings: <a href="https://github.com/${{ github.repository }}/security/code-scanning">Security → Code scanning</a>.</p>
+            <p>Total issues: $TOTAL</p>
+            <p>High: $HIGH</p>
+            <p>Medium: $MED</p>
+            <p>Low: $LOW</p>
           </body>
           </html>
           EOF
@@ -127,15 +115,13 @@ jobs:
           path: codeql-report.html
 
   build:
-    name: Build and Push Docker Image
+    name: Build Docker Image
     runs-on: ubuntu-latest
     needs: codeql
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Login Docker Hub
         uses: docker/login-action@v3
@@ -148,6 +134,34 @@ jobs:
           docker build -t ${{ secrets.DOCKER_USERNAME }}/bookmyflight:${{ github.sha }} .
           docker tag ${{ secrets.DOCKER_USERNAME }}/bookmyflight:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/bookmyflight:latest
 
+  trivy:
+    name: Trivy Docker Scan
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Run Trivy Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/bookmyflight:${{ github.sha }}
+          format: table
+          exit-code: 0
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+
+  push:
+    name: Push Docker Image
+    runs-on: ubuntu-latest
+    needs: trivy
+
+    steps:
+      - name: Login Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
       - name: Push Docker Image
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/bookmyflight:${{ github.sha }}
@@ -155,7 +169,7 @@ jobs:
 
   deploy:
     name: Deploy to Docker (Laptop1)
-    needs: build
+    needs: push
     runs-on: self-hosted
 
     steps:
