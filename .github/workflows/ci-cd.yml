@@ -198,3 +198,22 @@ jobs:
       - name: Start Updated Containers
         working-directory: C:\Users\ksing\OneDrive\Desktop\bookmyflight
         run: docker compose up -d --force-recreate
+
+  api-scan:
+    name: OWASP ZAP API Scan
+    if: github.actor != 'dependabot[bot]'
+    needs: deploy
+    runs-on: self-hosted
+
+    steps:
+      - name: Run ZAP in Docker
+        run: |
+          docker run --rm -v ${PWD}:/zap/wrk/:rw zaproxy/zap-stable zap-baseline.py \
+            -t http://localhost:8000 \
+            -r zap-report.html
+
+      - name: Upload ZAP Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report-html
+          path: zap-report.html
