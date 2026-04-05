@@ -181,20 +181,20 @@ jobs:
           name: dependabot-report-html
           path: dependabot-report.html
 
-deploy:
-  name: Deploy to Docker (Laptop1)
-  if: github.actor != 'dependabot[bot]' #protects from automated deployment on self host
-  needs: dependabot-report
-  runs-on: self-hosted
+  deploy:
+    name: Deploy to Docker (Laptop1)
+    if: github.actor != 'dependabot[bot]' #protects from automated deployment on self host
+    needs: dependabot-report
+    runs-on: self-hosted
 
-  steps:
-    - name: Pull Latest Image
-      run: docker pull ${{ secrets.DOCKER_USERNAME }}/bookmyflight:latest
+    steps:
+      - name: Pull Latest Image
+        run: docker pull ${{ secrets.DOCKER_USERNAME }}/bookmyflight:latest
 
-    - name: Stop Existing Containers
-      working-directory: C:\Users\ksing\OneDrive\Desktop\bookmyflight
-      run: docker compose down
+      - name: Stop Existing Containers
+        working-directory: C:\Users\ksing\OneDrive\Desktop\bookmyflight
+        run: docker compose down
 
-    - name: Start Updated Containers
-      working-directory: C:\Users\ksing\OneDrive\Desktop\bookmyflight
-      run: docker compose up -d --force-recreate
+      - name: Start Updated Containers
+        working-directory: C:\Users\ksing\OneDrive\Desktop\bookmyflight
+        run: docker compose up -d --force-recreate
