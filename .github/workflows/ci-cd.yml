@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  codeql:
+codeql:
     name: CodeQL SAST
     runs-on: ubuntu-latest
 
@@ -38,30 +38,31 @@ jobs:
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
+        with:
+          # This forces CodeQL to output the SARIF to a predictable location
+          upload: true
+          output: sarif-results
 
       - name: Upload SARIF artifact
         uses: actions/upload-artifact@v4
         with:
           name: codeql-sarif
-          path: ${{ runner.temp }}/codeql/**/*.sarif
+          path: sarif-results/*.sarif
+          if-no-files-found: error
 
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: Create CodeQL HTML Report
         run: |
-          echo "Searching for SARIF files..."
-          find ${{ runner.temp }} -name "*.sarif" | sed 's/^/  Found: /'
-
-          SARIF=$(find ${{ runner.temp }}/codeql/sarif -name "*.sarif" | head -1)
+          echo "Searching for SARIF files in the results directory..."
+          
+          # Use the explicit output directory we defined in the analyze step
+          SARIF=$(find sarif-results -name "*.sarif" | head -1)
 
           if [ ! -f "$SARIF" ]; then
-            echo "No SARIF in /codeql/sarif; searching broader..."
-            SARIF_ANY=$(find ${{ runner.temp }} -name "*.sarif" | head -1)
-            if [ -n "$SARIF_ANY" ]; then
-              SARIF="$SARIF_ANY"
-              echo "Using: $SARIF"
-            fi
+            echo "SARIF not found in sarif-results, searching workspace..."
+            SARIF=$(find ${{ github.workspace }} -name "*.sarif" | head -1)
           fi
 
           if [ ! -f "$SARIF" ]; then
@@ -69,9 +70,6 @@ jobs:
             cat > codeql-report.html << 'EOF'
           <!DOCTYPE html>
           <html>
-          <head>
-            <title>CodeQL SAST Report</title>
-          </head>
           <body>
             <h1>CodeQL SAST Report</h1>
             <p>No SARIF file found; see GitHub Security tab for details.</p>
@@ -81,13 +79,11 @@ jobs:
             exit 0
           fi
 
+          echo "Processing $SARIF"
           RESULTS=$(jq -r '.runs[].results[]' "$SARIF" 2>/dev/null || echo "[]")
 
-          if [ "$RESULTS" = "[]" ]; then
-            TOTAL=0
-            HIGH=0
-            MED=0
-            LOW=0
+          if [ "$RESULTS" = "[]" ] || [ -z "$RESULTS" ]; then
+            TOTAL=0; HIGH=0; MED=0; LOW=0
           else
             TOTAL=$(echo "$RESULTS" | jq -s 'length')
             HIGH=$(echo "$RESULTS" | jq -s 'map(select(.level == "error")) | length')
@@ -111,8 +107,6 @@ jobs:
             <h1>CodeQL SAST Report</h1>
             <p><strong>Generated on:</strong> $(date)</p>
             <p><strong>Repository:</strong> ${{ github.repository }}</p>
-            <p><strong>Commit:</strong> ${{ github.sha }}</p>
-
             <div class="summary">
               <h2>Issue Summary</h2>
               <p><span class="stat">Total issues:</span> $TOTAL</p>
@@ -120,15 +114,8 @@ jobs:
               <p><span class="stat">Medium severity (warning):</span> $MED</p>
               <p><span class="stat">Low severity (note):</span> $LOW</p>
             </div>
-
             <h2>Details</h2>
-            <p>
-              Full CodeQL SAST findings are available in GitHub:
-              <a href="https://github.com/${{ github.repository }}/security/code-scanning">Security → Code scanning</a>.
-            </p>
-            <p>
-              For automated tooling, download the attached <code>codeql-sarif</code> artifact.
-            </p>
+            <p>Full CodeQL findings: <a href="https://github.com/${{ github.repository }}/security/code-scanning">Security → Code scanning</a>.</p>
           </body>
           </html>
           EOF
@@ -139,7 +126,7 @@ jobs:
           name: codeql-report-html
           path: codeql-report.html
 
-  build:
+build:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
     needs: codeql
@@ -166,7 +153,7 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/bookmyflight:${{ github.sha }}
           docker push ${{ secrets.DOCKER_USERNAME }}/bookmyflight:latest
 
-  deploy:
+deploy:
     name: Deploy to Docker (Laptop1)
     needs: build
     runs-on: self-hosted
