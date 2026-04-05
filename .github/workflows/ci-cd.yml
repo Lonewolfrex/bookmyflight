@@ -17,13 +17,13 @@ jobs:
 
       # 1. Run SonarQube SAST analysis (Dockerized SonarQube server)
       - name: SonarQube Scan
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-      - uses: SonarSource/sonarqube-scan-action@v6
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          projectBaseDir: .
 
       # 2. OPTIONAL: Quality Gate (if you want to fail CI on bad quality)
       # - name: SonarQube Quality Gate check
