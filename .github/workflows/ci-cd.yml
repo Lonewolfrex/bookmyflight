@@ -57,10 +57,6 @@ jobs:
           SARIF=$(find sarif-results -name "*.sarif" | head -1)
 
           if [ ! -f "$SARIF" ]; then
-            SARIF=$(find ${{ github.workspace }} -name "*.sarif" | head -1)
-          fi
-
-          if [ ! -f "$SARIF" ]; then
             cat > codeql-report.html << 'EOF'
           <!DOCTYPE html>
           <html>
@@ -137,19 +133,57 @@ jobs:
     needs: build
 
     steps:
-      - name: Run Trivy Scan
+      - name: Run Trivy Scan and Save Report
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ secrets.DOCKER_USERNAME }}/bookmyflight:latest
           format: table
+          output: trivy-report.txt
           exit-code: 0
           ignore-unfixed: true
           vuln-type: os,library
           severity: CRITICAL,HIGH
 
+      - name: Convert Trivy Report to HTML
+        run: |
+          echo "<html><body><h1>Trivy Scan Report</h1><pre>" > trivy-report.html
+          cat trivy-report.txt >> trivy-report.html
+          echo "</pre></body></html>" >> trivy-report.html
+
+      - name: Upload Trivy Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report-html
+          path: trivy-report.html
+
+  dependabot-report:
+    name: Dependabot Security Summary
+    runs-on: ubuntu-latest
+    needs: trivy
+
+    steps:
+      - name: Create Dependabot HTML Summary
+        run: |
+          cat > dependabot-report.html << EOF
+          <!DOCTYPE html>
+          <html>
+          <body>
+            <h1>Dependabot SCA Summary</h1>
+            <p>Dependency vulnerability monitoring is enabled via GitHub Dependabot.</p>
+            <p>Check GitHub Security tab for live alerts and PR fixes.</p>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload Dependabot Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependabot-report-html
+          path: dependabot-report.html
+
   deploy:
     name: Deploy to Docker (Laptop1)
-    needs: trivy
+    needs: dependabot-report
     runs-on: self-hosted
 
     steps:
