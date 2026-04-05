@@ -17,7 +17,6 @@ jobs:
 
       # 1. Run SonarQube SAST analysis (Dockerized SonarQube server)
       - name: SonarQube Scan
-      - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
