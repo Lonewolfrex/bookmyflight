@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - v2
   pull_request:
     branches:
       - main
+      - v2
 
 jobs:
   codeql:
@@ -198,3 +200,70 @@ jobs:
       - name: Start Updated Containers
         working-directory: C:\Users\ksing\OneDrive\Desktop\bookmyflight
         run: docker compose up -d --force-recreate
+
+  api-scan:
+    name: OWASP ZAP Authenticated API Scan
+    if: github.actor != 'dependabot[bot]'
+    needs: deploy
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Prepare writable workspace
+        shell: powershell
+        run: |
+          New-Item -ItemType File -Force zap.yaml
+          New-Item -ItemType File -Force zap-report.html
+          New-Item -ItemType File -Force zap-report.json
+          New-Item -ItemType File -Force zap-report.md
+
+      - name: Fetch Django Login Page
+        shell: powershell
+        run: |
+          curl.exe -c cookies.txt -b cookies.txt http://localhost:8000/accounts/login/ -o login.html
+
+      - name: Extract CSRF and Login
+        shell: powershell
+        run: |
+          $content = Get-Content login.html -Raw
+          $csrf = [regex]::Match($content, 'name="csrfmiddlewaretoken" value="([^"]+)"').Groups[1].Value
+
+          curl.exe -c cookies.txt -b cookies.txt `
+            -d "username=testuser1" `
+            -d "password=Password@1" `
+            -d "csrfmiddlewaretoken=$csrf" `
+            -H "Referer: http://localhost:8000/accounts/login/" `
+            -X POST http://localhost:8000/accounts/login/
+
+      - name: Run Authenticated ZAP Scan in Docker
+        shell: powershell
+        run: |
+          docker run --rm `
+            --user root `
+            -v ${PWD}:/zap/wrk/:rw `
+            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py `
+            -t http://host.docker.internal:8000 `
+            -J zap-report.json `
+            -w zap-report.md `
+            -r zap-report.html `
+            -a; exit 0
+
+      - name: Upload ZAP HTML Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report-html
+          path: zap-report.html
+
+      - name: Upload ZAP JSON Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report-json
+          path: zap-report.json
+
+      - name: Upload ZAP Markdown Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report-md
+          path: zap-report.md
