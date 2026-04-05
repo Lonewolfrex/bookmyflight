@@ -43,7 +43,7 @@ jobs:
           output: sarif-results
 
       - name: Upload SARIF artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: codeql-sarif
           path: sarif-results/*.sarif
@@ -97,7 +97,7 @@ jobs:
           EOF
 
       - name: Upload CodeQL HTML Report Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: codeql-report-html
           path: codeql-report.html
@@ -151,7 +151,7 @@ jobs:
           echo "</pre></body></html>" >> trivy-report.html
 
       - name: Upload Trivy Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: trivy-report-html
           path: trivy-report.html
@@ -176,7 +176,7 @@ jobs:
           EOF
 
       - name: Upload Dependabot Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dependabot-report-html
           path: dependabot-report.html
