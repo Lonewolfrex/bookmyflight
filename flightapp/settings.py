@@ -10,6 +10,7 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*']  # For Docker localhost
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
     'http://127.0.0.1:8000',
+    'http://192.168.1.9:8000',
 ]
 
 INSTALLED_APPS = [
