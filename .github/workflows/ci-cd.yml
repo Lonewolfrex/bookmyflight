@@ -5,10 +5,14 @@ on:
     branches:
       - main
       - v2
+      - vuln_code
+      - fixed_code
   pull_request:
     branches:
       - main
       - v2
+      - vuln_code
+      - fixed_code
 
 jobs:
   codeql:
@@ -199,6 +203,14 @@ jobs:
 
       - name: Start Updated Containers
         working-directory: C:\Users\ksing\OneDrive\Desktop\bookmyflight
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          DEBUG: ${{ secrets.DEBUG }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
         run: docker compose up -d --force-recreate
 
   api-scan:
