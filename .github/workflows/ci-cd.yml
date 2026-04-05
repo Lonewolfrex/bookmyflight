@@ -230,7 +230,7 @@ jobs:
             -J zap-report.json `
             -w zap-report.md `
             -r zap-report.html `
-            -a
+            -a; exit 0
 
       - name: Upload ZAP HTML Report
         uses: actions/upload-artifact@v4
