@@ -40,6 +40,100 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
 
+      # Expose SARIF as artifact (for tools/IDE)
+      - name: Upload SARIF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: codeql-sarif
+          path: ${{ runner.temp }}/codeql/sarif/*.sarif
+
+      # Install jq to parse SARIF
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      # Generate HTML report with issue counts
+      - name: Create CodeQL HTML Report
+        run: |
+          # Locate the SARIF file
+          SARIF=$(find ${{ runner.temp }}/codeql/sarif -name "*.sarif" | head -1)
+          if [ ! -f "$SARIF" ]; then
+            echo "No SARIF file found; using dummy data."
+            cat > codeql-report.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>CodeQL SAST Report</title>
+          </head>
+          <body>
+            <h1>CodeQL SAST Report</h1>
+            <p>No SARIF file found; see GitHub Security tab for details.</p>
+          </body>
+          </html>
+          EOF
+            exit 0
+          fi
+
+          # Extract totals by severity
+          RESULTS=$(jq -r '.runs[].results[]' "$SARIF" 2>/dev/null || echo "[]")
+
+          if [ "$RESULTS" = "[]" ]; then
+            TOTAL=0
+            HIGH=0
+            MED=0
+            LOW=0
+          else
+            TOTAL=$(echo "$RESULTS" | jq -s 'length')
+            HIGH=$(echo "$RESULTS" | jq -s 'map(select(.level == "error")) | length')
+            MED=$(echo "$RESULTS" | jq -s 'map(select(.level == "warning")) | length')
+            LOW=$(echo "$RESULTS" | jq -s 'map(select(.level == "note")) | length')
+          fi
+
+          # Write HTML report
+          cat > codeql-report.html << EOF
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>CodeQL SAST Report</title>
+            <style>
+              body { font-family: system-ui, sans-serif; margin: 2em; }
+              h1, h2 { color: #2c3e50; }
+              .stat { font-weight: bold; color: #e74c3c; }
+              .summary { margin: 1em 0; padding: 1em; background: #f9f9f9; border-radius: 0.5em; }
+            </style>
+          </head>
+          <body>
+            <h1>CodeQL SAST Report</h1>
+            <p><strong>Generated on:</strong> $(date)</p>
+            <p><strong>Repository:</strong> ${{ github.repository }}</p>
+            <p><strong>Commit:</strong> ${{ github.sha }}</p>
+
+            <div class="summary">
+              <h2>Issue Summary</h2>
+              <p><span class="stat">Total issues:</span> $TOTAL</p>
+              <p><span class="stat">High severity (error):</span> $HIGH</p>
+              <p><span class="stat">Medium severity (warning):</span> $MED</p>
+              <p><span class="stat">Low severity (note):</span> $LOW</p>
+            </div>
+
+            <h2>Details</h2>
+            <p>
+              Full CodeQL SAST findings are available in GitHub:
+              <a href="https://github.com/${{ github.repository }}/security/code-scanning">Security → Code scanning</a>.
+            </p>
+            <p>
+              For automated tooling, download the attached <code>codeql-sarif</code> artifact.
+            </p>
+          </body>
+          </html>
+          EOF
+
+      # Upload HTML report artifact
+      - name: Upload CodeQL HTML Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: codeql-report-html
+          path: codeql-report.html
+
   # 2. Build Docker image and push to Docker Hub
   build:
     name: Build and Push Docker Image
