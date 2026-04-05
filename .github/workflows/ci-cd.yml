@@ -225,7 +225,7 @@ jobs:
             --network=host \
             -v $(pwd):/zap/wrk/:rw \
             ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-            -t http://172.19.16.1:8000/ \
+            -t http://172.19.16.1 \
             -J zap-report.json \
             -w zap-report.md \
             -r zap-report.html \
