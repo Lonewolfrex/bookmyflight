@@ -212,23 +212,24 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Prepare writable workspace
+        shell: powershell
         run: |
-          chmod -R 777 .
-          touch zap.yaml
-          touch zap-report.html zap-report.json zap-report.md
-          chmod 777 zap.yaml zap-report.html zap-report.json zap-report.md
+          New-Item -ItemType File -Force zap.yaml
+          New-Item -ItemType File -Force zap-report.html
+          New-Item -ItemType File -Force zap-report.json
+          New-Item -ItemType File -Force zap-report.md
 
-      - name: Run ZAP Baseline Scan in Docker
+      - name: Run ZAP Scan in Docker
+        shell: powershell
         run: |
-          docker run --rm \
-            --user root \
-            --network=host \
-            -v $(pwd):/zap/wrk/:rw \
-            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-            -t http://host.docker.internal:8000 \
-            -J zap-report.json \
-            -w zap-report.md \
-            -r zap-report.html \
+          docker run --rm `
+            --user root `
+            -v ${PWD}:/zap/wrk/:rw `
+            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py `
+            -t http://host.docker.internal:8000 `
+            -J zap-report.json `
+            -w zap-report.md `
+            -r zap-report.html `
             -a
 
       - name: Upload ZAP HTML Report
