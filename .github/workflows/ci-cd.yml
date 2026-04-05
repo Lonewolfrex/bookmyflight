@@ -222,7 +222,7 @@ jobs:
       - name: Fetch Django Login Page
         shell: powershell
         run: |
-          curl.exe -c cookies.txt -b cookies.txt http://host.docker.internal:8000/accounts/login/ -o login.html
+          curl.exe -c cookies.txt -b cookies.txt http://localhost:8000/accounts/login/ -o login.html
 
       - name: Extract CSRF and Login
         shell: powershell
@@ -234,8 +234,8 @@ jobs:
             -d "username=testuser1" `
             -d "password=Password@1" `
             -d "csrfmiddlewaretoken=$csrf" `
-            -H "Referer: http://host.docker.internal:8000/accounts/login/" `
-            -X POST http://host.docker.internal:8000/accounts/login/
+            -H "Referer: http://localhost:8000/accounts/login/" `
+            -X POST http://localhost:8000/accounts/login/
 
       - name: Run Authenticated ZAP Scan in Docker
         shell: powershell
