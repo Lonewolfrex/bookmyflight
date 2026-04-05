@@ -202,7 +202,7 @@ jobs:
         run: docker compose up -d --force-recreate
 
   api-scan:
-    name: OWASP ZAP API Scan
+    name: OWASP ZAP Authenticated API Scan
     if: github.actor != 'dependabot[bot]'
     needs: deploy
     runs-on: self-hosted
@@ -219,7 +219,25 @@ jobs:
           New-Item -ItemType File -Force zap-report.json
           New-Item -ItemType File -Force zap-report.md
 
-      - name: Run ZAP Scan in Docker
+      - name: Fetch Django Login Page
+        shell: powershell
+        run: |
+          curl.exe -c cookies.txt -b cookies.txt http://host.docker.internal:8000/accounts/login/ -o login.html
+
+      - name: Extract CSRF and Login
+        shell: powershell
+        run: |
+          $content = Get-Content login.html -Raw
+          $csrf = [regex]::Match($content, 'name="csrfmiddlewaretoken" value="([^"]+)"').Groups[1].Value
+
+          curl.exe -c cookies.txt -b cookies.txt `
+            -d "username=testuser1" `
+            -d "password=Password@1" `
+            -d "csrfmiddlewaretoken=$csrf" `
+            -H "Referer: http://host.docker.internal:8000/accounts/login/" `
+            -X POST http://host.docker.internal:8000/accounts/login/
+
+      - name: Run Authenticated ZAP Scan in Docker
         shell: powershell
         run: |
           docker run --rm `
