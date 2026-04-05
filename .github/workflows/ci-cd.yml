@@ -1,3 +1,4 @@
+```yaml
 name: Build and Deploy BookMyFlight
 
 on:
@@ -9,7 +10,6 @@ on:
       - main
 
 jobs:
-  # 1. Run CodeQL SAST (GitHub Advanced Security)
   codeql:
     name: CodeQL SAST
     runs-on: ubuntu-latest
@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'python' ]
+        language: ['python']
 
     steps:
       - name: Checkout
@@ -32,7 +32,7 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-          queries: +security-extended,security-and-quality  # extra security rules
+          queries: +security-extended,security-and-quality
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v3
@@ -40,22 +40,31 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
 
-      # Expose SARIF as artifact (for tools/IDE)
       - name: Upload SARIF artifact
         uses: actions/upload-artifact@v4
         with:
           name: codeql-sarif
           path: ${{ runner.temp }}/codeql/sarif/*.sarif
 
-      # Install jq to parse SARIF
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      # Generate HTML report with issue counts
       - name: Create CodeQL HTML Report
         run: |
-          # Locate the SARIF file
+          echo "Searching for SARIF files..."
+          find ${{ runner.temp }} -name "*.sarif" | sed 's/^/  Found: /'
+
           SARIF=$(find ${{ runner.temp }}/codeql/sarif -name "*.sarif" | head -1)
+
+          if [ ! -f "$SARIF" ]; then
+            echo "No SARIF in /codeql/sarif; searching broader..."
+            SARIF_ANY=$(find ${{ runner.temp }} -name "*.sarif" | head -1)
+            if [ -n "$SARIF_ANY" ]; then
+              SARIF="$SARIF_ANY"
+              echo "Using: $SARIF"
+            fi
+          fi
+
           if [ ! -f "$SARIF" ]; then
             echo "No SARIF file found; using dummy data."
             cat > codeql-report.html << 'EOF'
@@ -73,7 +82,6 @@ jobs:
             exit 0
           fi
 
-          # Extract totals by severity
           RESULTS=$(jq -r '.runs[].results[]' "$SARIF" 2>/dev/null || echo "[]")
 
           if [ "$RESULTS" = "[]" ]; then
@@ -88,7 +96,6 @@ jobs:
             LOW=$(echo "$RESULTS" | jq -s 'map(select(.level == "note")) | length')
           fi
 
-          # Write HTML report
           cat > codeql-report.html << EOF
           <!DOCTYPE html>
           <html>
@@ -127,18 +134,16 @@ jobs:
           </html>
           EOF
 
-      # Upload HTML report artifact
       - name: Upload CodeQL HTML Report Artifact
         uses: actions/upload-artifact@v4
         with:
           name: codeql-report-html
           path: codeql-report.html
 
-  # 2. Build Docker image and push to Docker Hub
   build:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
-    needs: codeql   # Only build if CodeQL passes
+    needs: codeql
 
     steps:
       - name: Checkout Code
@@ -162,7 +167,6 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/bookmyflight:${{ github.sha }}
           docker push ${{ secrets.DOCKER_USERNAME }}/bookmyflight:latest
 
-  # 3. Deploy to self-hosted (Laptop1)
   deploy:
     name: Deploy to Docker (Laptop1)
     needs: build
@@ -179,3 +183,4 @@ jobs:
       - name: Start Updated Containers
         working-directory: C:\Users\ksing\OneDrive\Desktop\bookmyflight
         run: docker compose up -d --force-recreate
+```
