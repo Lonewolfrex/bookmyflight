@@ -5,10 +5,14 @@ on:
     branches:
       - main
       - v2
+      - dev1
+      - fixed_code
   pull_request:
     branches:
       - main
       - v2
+      - dev1
+      - fixed_code
 
 jobs:
   codeql:
