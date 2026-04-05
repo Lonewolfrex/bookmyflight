@@ -6,33 +6,35 @@ services:
     volumes:
       - .:/app
     environment:
-      - DEBUG=1
-      - DB_NAME: ${DB_NAME}
-      - DB_USER: ${DB_USER}
-      - DB_PASS: ${DB_PASS}
-      - DB_HOST: ${DB_HOST}
-      - DB_PORT: ${DB_PORT}
+      DEBUG: ${DEBUG}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
     depends_on:
       - db
     networks:
       - webnet
+
   nginx:
     build: ./nginx
     image: nginx:alpine
     container_name: nginx-api-gateway
     ports:
       - "8080:80"
-      - "443:443"                        
+      - "443:443"
     depends_on:
       - web
     networks:
       - webnet
+
   db:
     image: postgres:16
     environment:
-      - POSTGRES_DB: ${DB_NAME}
-      - POSTGRES_USER: ${DB_USER}
-      - POSTGRES_PASSWORD: = ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
@@ -46,4 +48,3 @@ networks:
 
 volumes:
   pgdata:
-
