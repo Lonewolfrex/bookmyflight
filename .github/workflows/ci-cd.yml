@@ -1,4 +1,3 @@
-```yaml
 name: Build and Deploy BookMyFlight
 
 on:
@@ -183,4 +182,3 @@ jobs:
       - name: Start Updated Containers
         working-directory: C:\Users\ksing\OneDrive\Desktop\bookmyflight
         run: docker compose up -d --force-recreate
-```
