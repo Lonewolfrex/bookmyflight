@@ -16,13 +16,27 @@ from .models import Flight, Booking
 def home(request):
     flights = Flight.objects.filter(seats_available__gt=0).order_by('departure')
 
-    # Search flights
-    query = request.GET.get('q')
-    if query:
-        flights = flights.filter(
-            Q(origin__icontains=query) | Q(destination__icontains=query)
-        )
-    return render(request, 'flights/home.html', {'flights': flights, 'query': query})
+    origin = request.GET.get('origin')
+    destination = request.GET.get('destination')
+    departure_date = request.GET.get('departure_date')
+
+    if origin:
+        flights = flights.filter(origin__icontains=origin)
+
+    if destination:
+        flights = flights.filter(destination__icontains=destination)
+
+    if departure_date:
+        flights = flights.filter(departure__date=departure_date)
+
+    context = {
+        'flights': flights,
+        'origin': origin,
+        'destination': destination,
+        'departure_date': departure_date,
+    }
+
+    return render(request, 'flights/home.html', context)
 
 @login_required
 def book_flight(request, flight_id):
