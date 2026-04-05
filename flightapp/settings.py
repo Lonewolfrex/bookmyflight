@@ -7,6 +7,10 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-in-production')
 DEBUG = os.getenv('DEBUG', '1') == '1'
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*']  # For Docker localhost
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
